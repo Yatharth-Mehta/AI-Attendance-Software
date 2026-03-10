@@ -96,7 +96,7 @@ faces/
       img1.jpg
       img2.jpg
 
-   john/
+   aman/
       img1.jpg
 ```
 
@@ -300,7 +300,7 @@ faces/
 ### Run the Program
 
 ```
-python gateway.py
+python main.py
 ```
 
 Press **Q** to exit the application.
