@@ -8,7 +8,6 @@ from datetime import datetime
 
 DATASET_PATH = "faces"
 CONFIDENCE_THRESHOLD = 140
-
 ABSENCE_GRACE = 5
 BREAK_LIMIT = 10
 
@@ -27,7 +26,6 @@ break_seconds INTEGER
 """)
 
 conn.commit()
-print("Database ready")
 
 mp_face = mp.solutions.face_detection
 detector = mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.6)
@@ -36,8 +34,6 @@ faces = []
 labels = []
 label_map = {}
 label_id = 0
-
-print("Loading dataset...")
 
 for person in os.listdir(DATASET_PATH):
 
@@ -65,18 +61,15 @@ for person in os.listdir(DATASET_PATH):
 
     label_id += 1
 
-print("People:", label_map)
-
 if len(faces) == 0:
     raise Exception("Dataset empty")
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.train(faces, np.array(labels))
 
-print("Recognizer trained")
-
 sessions = {}
 warning_text = ""
+warning_time = 0
 
 def start_session(name):
 
@@ -125,8 +118,6 @@ def update_exit(name):
     conn.commit()
 
 cap = cv2.VideoCapture(0)
-
-print("Camera started")
 
 while True:
 
@@ -220,6 +211,7 @@ while True:
             if break_time > BREAK_LIMIT:
 
                 warning_text = f"{name} exited"
+                warning_time = time.time()
 
                 update_exit(name)
 
@@ -258,6 +250,25 @@ while True:
     cv2.putText(frame,f"FPS: {fps}",(width-120,40),
                 cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,255),2)
 
+    if warning_text != "":
+
+        if time.time() - warning_time < 3:
+
+            text_size = cv2.getTextSize(warning_text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+            x = int((width - text_size[0]) / 2)
+
+            cv2.putText(
+                frame,
+                warning_text,
+                (x, height - 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0,120,255),
+                3
+            )
+        else:
+            warning_text = ""
+
     cv2.imshow("AI Attendance System", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -265,7 +276,6 @@ while True:
 
 for name in list(sessions.keys()):
     update_exit(name)
-
 
 cap.release()
 cv2.destroyAllWindows()
